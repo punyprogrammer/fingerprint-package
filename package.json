@@ -1,0 +1,18 @@
+{
+  "name": "simple-fingerprint",
+  "version": "1.0.0",
+  "description": "Minimalistic user fingerprinting library for web applications",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "fingerprint",
+    "browser",
+    "device",
+    "analytics"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {}
+}
