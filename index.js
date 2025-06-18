@@ -93,7 +93,7 @@ class SimpleFingerprint {
     }
     return Math.abs(hash).toString(16);
   }
- 
+
   async generate() {
     const browserInfo = this.getBrowserInfo();
     const screenInfo = this.getScreenInfo();
@@ -101,7 +101,8 @@ class SimpleFingerprint {
     const canvasFingerprint = this.getCanvasFingerprint();
     const webglInfo = this.getWebGLInfo();
     const hardwareInfo = this.getHardwareInfo();
-
+    const locationInfo = await this.getLocationInfo();
+    console.log("location", locationInfo);
     this.fingerprint = {
       browser: browserInfo,
       screen: screenInfo,
@@ -109,6 +110,7 @@ class SimpleFingerprint {
       canvas: canvasFingerprint,
       webgl: webglInfo,
       hardware: hardwareInfo,
+      location: locationInfo,
     };
 
     const fingerprintString = JSON.stringify(this.fingerprint);
@@ -130,6 +132,26 @@ class SimpleFingerprint {
     }
     return this.fingerprint;
   }
+  async getLocationInfo() {
+    try {
+      const res = await fetch("https://ipapi.co/json/"); // or use ipinfo.io/json
+      if (!res.ok) throw new Error("Failed to fetch location");
+      const location = await res.json();
+      return {
+        ip: location.ip,
+        city: location.city,
+        region: location.region,
+        country: location.country_name,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        org: location.org,
+      };
+    } catch (e) {
+      console.warn("Location fetch failed:", e);
+      return { error: "location_unavailable" };
+    }
+  }
+
   async sendToServer(apiUrl) {
     // Check sessionStorage to avoid redundant calls
     const cachedHash = sessionStorage.getItem("fingerprint_hash");
