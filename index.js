@@ -1,14 +1,11 @@
-// index.js
 class SimpleFingerprint {
   constructor() {
     this.fingerprint = {};
   }
 
-  // Get basic browser information
   getBrowserInfo() {
-    const ua = navigator.userAgent;
     return {
-      userAgent: ua,
+      userAgent: navigator.userAgent,
       language: navigator.language,
       languages: navigator.languages,
       platform: navigator.platform,
@@ -17,7 +14,6 @@ class SimpleFingerprint {
     };
   }
 
-  // Get screen information
   getScreenInfo() {
     return {
       screenWidth: screen.width,
@@ -29,7 +25,6 @@ class SimpleFingerprint {
     };
   }
 
-  // Get timezone information
   getTimezoneInfo() {
     return {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -37,7 +32,6 @@ class SimpleFingerprint {
     };
   }
 
-  // Get canvas fingerprint (basic)
   getCanvasFingerprint() {
     try {
       const canvas = document.createElement("canvas");
@@ -47,7 +41,6 @@ class SimpleFingerprint {
 
       ctx.textBaseline = "top";
       ctx.font = "14px Arial";
-      ctx.textBaseline = "alphabetic";
       ctx.fillStyle = "#f60";
       ctx.fillRect(125, 1, 62, 20);
       ctx.fillStyle = "#069";
@@ -57,11 +50,11 @@ class SimpleFingerprint {
 
       return canvas.toDataURL();
     } catch (e) {
+      console.warn("Canvas fingerprinting not supported:", e);
       return "canvas_not_supported";
     }
   }
 
-  // Get WebGL information
   getWebGLInfo() {
     try {
       const canvas = document.createElement("canvas");
@@ -77,52 +70,11 @@ class SimpleFingerprint {
         shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
       };
     } catch (e) {
+      console.warn("WebGL fingerprinting not supported:", e);
       return "webgl_error";
     }
   }
 
-  // Get audio context fingerprint
-  getAudioFingerprint() {
-    return new Promise((resolve) => {
-      try {
-        const audioContext = new (window.AudioContext ||
-          window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const analyser = audioContext.createAnalyser();
-        const gainNode = audioContext.createGain();
-        const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-
-        oscillator.type = "triangle";
-        oscillator.frequency.setValueAtTime(10000, audioContext.currentTime);
-
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-
-        oscillator.connect(analyser);
-        analyser.connect(scriptProcessor);
-        scriptProcessor.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        scriptProcessor.onaudioprocess = function (bins) {
-          const data = bins.inputBuffer.getChannelData(0);
-          let sum = 0;
-          for (let i = 0; i < data.length; i++) {
-            sum += Math.abs(data[i]);
-          }
-          resolve(sum.toString());
-          audioContext.close();
-        };
-
-        oscillator.start(0);
-        setTimeout(() => {
-          oscillator.stop();
-        }, 100);
-      } catch (e) {
-        resolve("audio_not_supported");
-      }
-    });
-  }
-
-  // Get hardware concurrency
   getHardwareInfo() {
     return {
       hardwareConcurrency: navigator.hardwareConcurrency || "unknown",
@@ -131,26 +83,23 @@ class SimpleFingerprint {
     };
   }
 
-  // Generate hash from string
   generateHash(str) {
     let hash = 0;
     if (str.length === 0) return hash;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
       hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
+      hash = hash & hash;
     }
     return Math.abs(hash).toString(16);
   }
 
-  // Generate complete fingerprint
   async generate() {
     const browserInfo = this.getBrowserInfo();
     const screenInfo = this.getScreenInfo();
     const timezoneInfo = this.getTimezoneInfo();
     const canvasFingerprint = this.getCanvasFingerprint();
     const webglInfo = this.getWebGLInfo();
-    const audioFingerprint = await this.getAudioFingerprint();
     const hardwareInfo = this.getHardwareInfo();
 
     this.fingerprint = {
@@ -159,19 +108,15 @@ class SimpleFingerprint {
       timezone: timezoneInfo,
       canvas: canvasFingerprint,
       webgl: webglInfo,
-      audio: audioFingerprint,
       hardware: hardwareInfo,
-      timestamp: Date.now(),
     };
 
-    // Generate a hash of the fingerprint
     const fingerprintString = JSON.stringify(this.fingerprint);
     this.fingerprint.hash = this.generateHash(fingerprintString);
 
     return this.fingerprint;
   }
 
-  // Get just the hash
   async getHash() {
     if (!this.fingerprint.hash) {
       await this.generate();
@@ -179,7 +124,6 @@ class SimpleFingerprint {
     return this.fingerprint.hash;
   }
 
-  // Get full fingerprint data
   async getData() {
     if (!this.fingerprint.hash) {
       await this.generate();
@@ -188,13 +132,5 @@ class SimpleFingerprint {
   }
 }
 
-// Export for different module systems
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = SimpleFingerprint;
-} else if (typeof define === "function" && define.amd) {
-  define([], function () {
-    return SimpleFingerprint;
-  });
-} else {
-  window.SimpleFingerprint = SimpleFingerprint;
-}
+// Export for both ES Modules and CommonJS
+export default SimpleFingerprint;
