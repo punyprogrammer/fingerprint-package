@@ -130,6 +130,32 @@ class SimpleFingerprint {
     }
     return this.fingerprint;
   }
+  async sendToServer(apiUrl) {
+    // Check sessionStorage to avoid redundant calls
+    const cachedHash = sessionStorage.getItem("fingerprint_hash");
+    if (cachedHash) {
+      this.fingerprint.hash = cachedHash;
+      return cachedHash;
+    }
+
+    // Generate fingerprint
+    await this.generate();
+
+    try {
+      await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.fingerprint),
+      });
+
+      // Store hash in sessionStorage
+      sessionStorage.setItem("fingerprint_hash", this.fingerprint.hash);
+    } catch (e) {
+      console.error("Failed to send fingerprint:", e);
+    }
+
+    return this.fingerprint.hash;
+  }
 }
 
 // Export for both ES Modules and CommonJS
