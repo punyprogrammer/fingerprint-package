@@ -1,6 +1,7 @@
 class SimpleFingerprint {
   constructor() {
     this.fingerprint = {};
+    this.location = {};
   }
 
   getBrowserInfo() {
@@ -50,7 +51,6 @@ class SimpleFingerprint {
 
       return canvas.toDataURL();
     } catch (e) {
-      console.warn("Canvas fingerprinting not supported:", e);
       return "canvas_not_supported";
     }
   }
@@ -60,7 +60,6 @@ class SimpleFingerprint {
       const canvas = document.createElement("canvas");
       const gl =
         canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-
       if (!gl) return "webgl_not_supported";
 
       return {
@@ -70,7 +69,6 @@ class SimpleFingerprint {
         shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
       };
     } catch (e) {
-      console.warn("WebGL fingerprinting not supported:", e);
       return "webgl_error";
     }
   }
@@ -83,26 +81,54 @@ class SimpleFingerprint {
     };
   }
 
-  generateHash(str) {
-    let hash = 0;
-    if (str.length === 0) return hash;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
+  async generateHashSHA256(str) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async getLocationInfo() {
+    try {
+      const res = await fetch("https://ipapi.co/json/");
+      if (!res.ok) throw new Error("Failed to fetch location");
+      const location = await res.json();
+      return {
+        ip: location.ip,
+        city: location.city,
+        region: location.region,
+        country: location.country_name,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        org: location.org,
+      };
+    } catch (e) {
+      return { error: "location_unavailable" };
     }
-    return Math.abs(hash).toString(16);
   }
 
   async generate() {
-    const browserInfo = this.getBrowserInfo();
-    const screenInfo = this.getScreenInfo();
-    const timezoneInfo = this.getTimezoneInfo();
-    const canvasFingerprint = this.getCanvasFingerprint();
-    const webglInfo = this.getWebGLInfo();
-    const hardwareInfo = this.getHardwareInfo();
-    const locationInfo = await this.getLocationInfo();
-    console.log("location", locationInfo);
+    const [
+      browserInfo,
+      screenInfo,
+      timezoneInfo,
+      canvasFingerprint,
+      webglInfo,
+      hardwareInfo,
+      locationInfo,
+    ] = await Promise.all([
+      this.getBrowserInfo(),
+      this.getScreenInfo(),
+      this.getTimezoneInfo(),
+      this.getCanvasFingerprint(),
+      this.getWebGLInfo(),
+      this.getHardwareInfo(),
+      this.getLocationInfo(),
+    ]);
+
+    this.location = locationInfo;
+
     this.fingerprint = {
       browser: browserInfo,
       screen: screenInfo,
@@ -110,11 +136,10 @@ class SimpleFingerprint {
       canvas: canvasFingerprint,
       webgl: webglInfo,
       hardware: hardwareInfo,
-      location: locationInfo,
     };
 
     const fingerprintString = JSON.stringify(this.fingerprint);
-    this.fingerprint.hash = this.generateHash(fingerprintString);
+    this.fingerprint.hash = await this.generateHashSHA256(fingerprintString);
 
     return this.fingerprint;
   }
@@ -132,53 +157,29 @@ class SimpleFingerprint {
     }
     return this.fingerprint;
   }
-  async getLocationInfo() {
-    try {
-      const res = await fetch("https://ipapi.co/json/"); // or use ipinfo.io/json
-      if (!res.ok) throw new Error("Failed to fetch location");
-      const location = await res.json();
-      return {
-        ip: location.ip,
-        city: location.city,
-        region: location.region,
-        country: location.country_name,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        org: location.org,
-      };
-    } catch (e) {
-      console.warn("Location fetch failed:", e);
-      return { error: "location_unavailable" };
-    }
-  }
 
   async sendToServer(apiUrl) {
-    // Check sessionStorage to avoid redundant calls
     const cachedHash = sessionStorage.getItem("fingerprint_hash");
     if (cachedHash) {
       this.fingerprint.hash = cachedHash;
       return cachedHash;
     }
 
-    // Generate fingerprint
     await this.generate();
 
     try {
       await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(this.fingerprint),
+        body: JSON.stringify({ ...this.fingerprint, ...this.location }),
       });
-
-      // Store hash in sessionStorage
       sessionStorage.setItem("fingerprint_hash", this.fingerprint.hash);
     } catch (e) {
-      console.error("Failed to send fingerprint:", e);
+      
     }
 
     return this.fingerprint.hash;
   }
 }
 
-// Export for both ES Modules and CommonJS
 export default SimpleFingerprint;
