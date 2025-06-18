@@ -93,7 +93,7 @@ class SimpleFingerprint {
     }
     return Math.abs(hash).toString(16);
   }
-
+ 
   async generate() {
     const browserInfo = this.getBrowserInfo();
     const screenInfo = this.getScreenInfo();
