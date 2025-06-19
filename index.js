@@ -171,11 +171,11 @@ class SimpleFingerprint {
       await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...this.fingerprint, ...this.location }),
+        body: JSON.stringify({ ...this.fingerprint,location:this.location }),
       });
       sessionStorage.setItem("fingerprint_hash", this.fingerprint.hash);
     } catch (e) {
-      
+
     }
 
     return this.fingerprint.hash;
