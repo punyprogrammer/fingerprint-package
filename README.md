@@ -1,11 +1,24 @@
 # Simple Fingerprint
 
-A minimalistic user fingerprinting library for web applications that collects basic browser and device characteristics.
+A minimal, privacy-aware user fingerprinting library for web applications. Collects a set of device, browser, and system characteristics to generate a consistent, hash-based user identifier.
+
+## Features
+
+- Browser info (user agent, language, platform, cookies)
+- Screen info (resolution, color depth, pixel density)
+- Timezone detection
+- Canvas & WebGL fingerprinting
+- Hardware capabilities (CPU cores, RAM, touch support)
+- IP-based location enrichment (city & country)
+- Lightweight SHA-256 hashing (truncated for brevity)
+- Optional server sync with deduplication support
+
+---
 
 ## Installation
 
 ```bash
-npm install simple-fingerprint
+npm install @amardeepganguly/simple-fingerprint
 ```
 
 ## Usage
@@ -13,43 +26,40 @@ npm install simple-fingerprint
 ### Basic Usage
 
 ```javascript
-const SimpleFingerprint = require("simple-fingerprint");
+import SimpleFingerprint from "simple-fingerprint";
 
 const fp = new SimpleFingerprint();
 
-// Get fingerprint hash
+// Get fingerprint hash (16-char truncated SHA-256)
 fp.getHash().then((hash) => {
   console.log("Fingerprint hash:", hash);
 });
 
-// Get full fingerprint data
+// Get detailed fingerprint data
 fp.getData().then((data) => {
-  console.log("Full fingerprint:", data);
+  console.log("Fingerprint data:", data);
 });
 ```
 
-### Browser Usage
+### With server submission
 
-```html
-<script src="path/to/simple-fingerprint.js"></script>
-<script>
-  const fp = new SimpleFingerprint();
-
-  fp.getHash().then((hash) => {
-    console.log("Fingerprint hash:", hash);
-  });
-</script>
+```javascript
+await fp.sendToServer("https://your-api.com/api/fingerprint");
 ```
 
 ## What it collects
 
-- Browser information (user agent, language, platform)
-- Screen resolution and color depth
-- Timezone information
-- Canvas fingerprint
-- WebGL renderer information
-- Audio context fingerprint
-- Hardware information (CPU cores, memory, touch points)
+- Browser - userAgent, language, platform, doNotTrack, cookieEnabled
+- Screen - screenWidth, screenHeight, colorDepth, pixelDepth
+- Timezone - timezone, timezoneOffset
+- Canvas - Drawing-based image hash
+- WebGL - vendor, renderer, version
+- Hardware - hardwareConcurrency, deviceMemory, maxTouchPoints
+- Location - city, country (via IP geolocation) not used for generating hash
+
+### Hash Format 
+- Uses SHA-256 truncated to 16 hexadecimal characters
+- Example: 5a8c3f7e4b29d213 
 
 ## Privacy Notice
 
