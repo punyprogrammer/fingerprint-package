@@ -95,13 +95,9 @@ class SimpleFingerprint {
       if (!res.ok) throw new Error("Failed to fetch location");
       const location = await res.json();
       return {
-        ip: location.ip,
+       
         city: location.city,
-        region: location.region,
         country: location.country_name,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        org: location.org,
       };
     } catch (e) {
       return { error: "location_unavailable" };
@@ -171,7 +167,7 @@ class SimpleFingerprint {
       await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...this.fingerprint,location:this.location }),
+        body: JSON.stringify({ ...this.fingerprint,...this.location }),
       });
       sessionStorage.setItem("fingerprint_hash", this.fingerprint.hash);
     } catch (e) {
