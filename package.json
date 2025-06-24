@@ -1,6 +1,6 @@
 {
   "name": "@amardeepganguly/simple-fingerprint",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Minimalistic user fingerprinting library for web applications",
   "main": "index.js",
   "author": "johnmayer190999@gmail.com",

@@ -239,3 +239,5 @@ class SimpleFingerprint {
     }
   }
 }
+export default SimpleFingerprint;
+module.exports = SimpleFingerprint;
